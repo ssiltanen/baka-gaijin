@@ -44,4 +44,3 @@ jobs:
       env:
         HD_BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         HD_APP_URL: ${{ env.APP_URL }}
-        HD_PGSSLMODE: no-verify

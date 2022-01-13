@@ -1,5 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api'
-import { convert } from './domain'
+import { analyze, Token } from './tokenizer'
 
 const { BOT_TOKEN, APP_URL, PORT } = process.env
 if (!BOT_TOKEN) throw new Error('"BOT_TOKEN" env var is required!')
@@ -16,39 +16,54 @@ if (process.env.NODE_ENV === 'production') {
 
 bot.setMyCommands([])
 
-bot.on('inline_query', async (msg) => {
+const concise = (tokens: Token[]) => {
+  return tokens
+    .map((token) => token.reading)
+    .join(' ')
+}
+
+const verbose = (tokens: Token[]) => {
+  const text = tokens
+    .map((token) => token.token)
+    .join(' ')
+  const details = tokens
+    .filter((token) => token.hasKanji)
+    .map((token) => `${token.token} - ${token.reading}`)
+    .join('\n')
+  if (details) return `${text}\n---\n${details}`
+  return text
+}
+
+bot.on('inline_query', (msg) => {
   if (msg.query) {
-    const normal = await convert(msg.query, 'normal')
-    const spaced = await convert(msg.query, 'spaced')
-    const okurigana = await convert(msg.query, 'okurigana')
-    //const furigana = await convert(msg.query, 'furigana')
-    bot.answerInlineQuery(msg.id, [
+    const tokens = analyze(msg.query)
+    bot.answerInlineQuery(
+      msg.id,
+      [
+        {
+          id: 'concise',
+          type: 'article',
+          title: 'Concise',
+          input_message_content: { message_text: concise(tokens) },
+        },
+        {
+          id: 'verbose',
+          type: 'article',
+          title: 'Verbose',
+          input_message_content: { message_text: verbose(tokens) },
+        },
+      ],
       {
-        id: 'normal',
-        type: 'article',
-        title: 'Normal',
-        input_message_content: { message_text: normal },
+        cache_time: 1,
+        is_personal: true,
       },
-      {
-        id: 'spaced',
-        type: 'article',
-        title: 'Spaced',
-        input_message_content: { message_text: spaced },
-      },
-      {
-        id: 'okurigana',
-        type: 'article',
-        title: 'Okurigana',
-        input_message_content: { message_text: okurigana },
-      },
-      // {
-      //   id: 'furigana',
-      //   type: 'article',
-      //   title: 'Furigana',
-      //   input_message_content: { message_text: furigana, parse_mode: 'HTML' },
-      // },
-    ])
+    )
   }
+})
+
+bot.on('message', async (msg) => {
+  const chatId = msg.chat.id
+  await bot.sendMessage(chatId, 'Baaaaka')
 })
 
 export default bot
