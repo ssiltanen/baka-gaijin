@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api'
+import { hasJapanese } from './text-util'
 import { analyze, Token } from './tokenizer'
 
 const { BOT_TOKEN, APP_URL, PORT } = process.env
@@ -63,7 +64,16 @@ bot.on('inline_query', (msg) => {
 
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id
-  await bot.sendMessage(chatId, 'Baaaaka')
+  if (msg.text) {
+    const tokens = analyze(msg.text)
+    if (tokens.some((token) => hasJapanese(token.token))) {
+      await bot.sendMessage(chatId, verbose(tokens))
+    } else {
+      await bot.sendMessage(chatId, 'Baaaka!')
+    }
+  } else {
+    await bot.sendMessage(chatId, 'Baaaka!')
+  }
 })
 
 export default bot
