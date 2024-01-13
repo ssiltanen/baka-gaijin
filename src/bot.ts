@@ -18,15 +18,11 @@ if (process.env.NODE_ENV === 'production') {
 bot.setMyCommands([])
 
 const concise = (tokens: Token[]) => {
-  return tokens
-    .map((token) => token.reading)
-    .join(' ')
+  return tokens.map((token) => token.reading).join(' ')
 }
 
 const verbose = (tokens: Token[]) => {
-  const text = tokens
-    .map((token) => token.token)
-    .join(' ')
+  const text = tokens.map((token) => token.token).join(' ')
   const details = tokens
     .filter((token) => token.hasKanji)
     .map((token) => `${token.token} - ${token.reading}`)
@@ -66,14 +62,11 @@ bot.on('message', async (msg) => {
   const chatId = msg.chat.id
   if (msg.text) {
     const tokens = analyze(msg.text)
-    if (tokens.some((token) => hasJapanese(token.token))) {
-      await bot.sendMessage(chatId, verbose(tokens))
-    } else {
-      await bot.sendMessage(chatId, 'Baaaka!')
+    if (tokens.some(({ token }) => hasJapanese(token))) {
+      return await bot.sendMessage(chatId, verbose(tokens))
     }
-  } else {
-    await bot.sendMessage(chatId, 'Baaaka!')
-  }
+  } 
+  await bot.sendMessage(chatId, 'Baaaka!')
 })
 
 export default bot
